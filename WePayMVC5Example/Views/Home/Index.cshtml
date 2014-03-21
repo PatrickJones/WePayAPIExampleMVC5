@@ -1,0 +1,541 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron">
+    <h1>WePay C# SDK Example</h1>
+    <p class="lead">This example uses the <b>WePayMVC5HttpClientSDK</b> to retrieve information from the WePay REST API.</p>
+    <p>This example is intended to show you how to SEND and RETRIEVE information using the SDK. So the best way to learn how to do that is to look at the Controllers and Action methods and how they are set up (set a break point if necessary). Each Controller handles a specific API call category (ex. UserController handles /user calls) with action methods for each subcategory (i.e. /user/create, user/modify, user/find, etc.)</p>
+    <p>This example is NOT intended to show you how to create a WePay App using their Platform Strategy. WePays documentation is very, very clear and easy to implement. With that in mind, the examples below will simply display the responses in JSON format (responses are actually deserialized into typed objects inside the SDK, I am simply displaying them to you as JSON) to show that they are working. PATIENCE, WePays network experiences 'delays' so wait a few seconds to get a response after clicking a button!</p>
+    <p>See the bottom of this page to change JSON to ActionResult.</p>
+    <p>You will need <a href="https://www.wepay.com/developer">WePay</a> Account/App to run this sample as you will need the account authentication info for the Web.config (it's free). You also need to download the 'WePayHttpClientSDK' SDK.</p>
+    <p>You can find the SDK on GitHub.</p>
+    <p><a href="https://github.com/PatrickJones/WePayHttpClientSDK" class="btn btn-primary btn-large">WePayMVC5HttpClientSDK</a></p>
+</div>
+
+<h3>After you have your WePay account set up, perform the following two steps. The real testing begins at the Toggle Panel.</h3>
+
+<div class="row steps">
+    <div class="col-md-12 well gold-well">
+        <h3>Step 1 - Modify MVC app Web.config</h3>
+        <p><strong>NOTE:</strong>This is the root Web.config, NOT the Views/Web.config.</p>
+        <p>In the <code>&lt;appsettings&gt;</code> insert the following:</p>
+        <pre>
+&lt;add key="WepayAccessToken" value="&lt;YOUR_ACCESS_ TOKEN&gt;" /&gt;
+&lt;add key="WepayAccountId" value="&lt;YOUR_ACCOUNT_ID&gt;" /&gt;
+&lt;add key="WepayClientSecret" value="&lt;YOUR_CLIENT_SECRET&gt;" /&gt;
+&lt;add key="WepayClientId" value="&lt;YOUR_CLIENT_ID&gt;" /&gt;
+&lt;add key="ProductionMode" value="false" /&gt;
+        </pre>
+        <p>You get these values from your WePay app account. Pay attention to the "ProductionMode" as it indicates whether you are testing or in LIVE production.</p> 
+    </div>
+</div>
+
+<div class="row steps">
+    <div class="col-md-12 well gold-well">
+        <h3>Step 2 - Modify MVC app Global.asax</h3>
+        <p>Insert the following code, as is, at the bottom of the Application_Start().</p>
+        <pre>
+WePayConfiguration.accessToken = ConfigurationManager.AppSettings["WepayAccessToken"];
+WePayConfiguration.accountId = Convert.ToInt32(ConfigurationManager.AppSettings["WepayAccountId"]);
+WePayConfiguration.clientId = Convert.ToInt32(ConfigurationManager.AppSettings["WepayClientId"]);
+WePayConfiguration.clientSecret = ConfigurationManager.AppSettings["WepayClientSecret"];
+WePayConfiguration.productionMode = Convert.ToBoolean(ConfigurationManager.AppSettings["ProductionMode"]);
+</pre>
+        <p>This code reads the values from the Web.config file.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <blockquote class="alert-warning">
+            Sample parameter values are hard coded into each particular action method. Not all parameters are set, just the 'Required' ones. You will need to change them there if necessary, or create your own input form.
+        </blockquote>
+    </div>
+    <div class="col-lg-6">
+        <blockquote class="alert-warning">
+            LOOK AT THE ACTION METHOD BEFORE CLICKING BUTTONS, where ever possible I tried to explain and comment the code.
+        </blockquote>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h3>
+            Each Toggle panel has a set of buttons that invokes the action method on the controller for the particular call group (/app, /user, /account, etc). Each button has the name of the url its' calling on it. 
+        </h3>
+        <h5>DEBUGGING NOTE: Your WePay account has "API Call" history feature! Use it to check if the call actually made it to Wepays' service. Click your app in the Wepay Dashboard, and it is the last button on menu.</h5>
+        <div class="panel-group" id="accordion">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+                            /app Calls - Invocations are on AppController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseOne" class="panel-collapse collapse in">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <blockquote>
+                                <p class="small-font">Ensure you have set 'client_id' and 'client_secret' on action method GetAppInfoAsync() in the 'AppController'</p>
+                                <p>@Ajax.ActionLink("Invoke /app", "GetAppInfoAsync", "App", null, new AjaxOptions { OnSuccess = "responseHolder(appSection,data)", UpdateTargetId = "appSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">This is going to return the exact same thing as /app, so you won't notice a change if you click this button AFTER the /app button above.</p>
+                                <p>@Ajax.ActionLink("Invoke /app/modify", "ModifyAppAsync", "App", null, new AjaxOptions { OnSuccess = "responseHolder(appSection,data)", UpdateTargetId = "appSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="appSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
+                            /user Calls - Invocations are on UserController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseTwo" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <blockquote>
+                                <p class="small-font">Gets the details of the user associated with the access token you set in the Web.config and Global.asax files.</p>
+                                <p>@Ajax.ActionLink("Invoke /user", "GetUserAsync", "User", null, new AjaxOptions { OnSuccess = "responseHolder(userSection,data)", UpdateTargetId = "userSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">This is going to return the exact same thing as /user. Cannot use LOCALHOST as property for 'callback_uri'. See action method ModifyUserAsync().</p>
+                                <p>@Ajax.ActionLink("Invoke /user/modify", "ModifyUserAsync", "User", null, new AjaxOptions { OnSuccess = "responseHolder(userSection,data)", UpdateTargetId = "userSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">If first time use, set properties in RegisterUserAsync() action or will not work.</p>
+                                <p>@Ajax.ActionLink("Invoke /user/register", "RegisterUserAsync", "User", null, new AjaxOptions { OnSuccess = "responseHolder(userSection,data)", UpdateTargetId = "userSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="userSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseThree">
+                            /account Calls - Invocations are on AcountController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseThree" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <blockquote>
+                                <p class="small-font">Gets the payment account associated with the access token you set in the Web.config and Global.asax files.</p>
+                                <p>@Ajax.ActionLink("Invoke /account", "GetAccountAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">I have not set the reference_id property on the FindAccountRequest object(see Action method), this means the call will return an array of ALL of the user's accounts. If you set this property you will get an array of accounts that match that reference_id only.</p>
+                                <p>@Ajax.ActionLink("Invoke /acccount/find", "FindAccountAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">CAUTION! each time you click this button it will create an account. Click it then check your WePay account.</p>
+                                <p>@Ajax.ActionLink("Invoke /account/create", "CreateAccountAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">This will return the same info as /account button above.</p>
+                                <p>@Ajax.ActionLink("Invoke /account/modify", "ModifyAccountAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font"></p>
+                                <p class="small-font">DeleteAccountAsync() action method not complete so you don't delete your account! Set the 'account_id' on the Action Method.</p>
+                                <p>@Ajax.ActionLink("Invoke /account/delete", "DeleteAccountAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">ATTENTION: This call will RETURN a URL (don't store because it will change) that a user can visit to update info for his or her account. After the update they will be REDIRECTED to the uri YOU provide in the 'redirect_uri' parameter.</p>
+                                <p>@Ajax.ActionLink("Invoke /account/get_update_uri", "GetAccountUpdateUriAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">This call returns information about reserves and release schedule for a particular account.</p>
+                                <p>@Ajax.ActionLink("Invoke /account/get_reserve_details", "GetAccountReserveDetailsAsync", "Account", null, new AjaxOptions { OnSuccess = "responseHolder(accountSection,data)", UpdateTargetId = "accountSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="accountSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseFour">
+                            /checkout Calls - Invocations are on CheckoutController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseFour" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <strong>YOU MUST CREATE CHECKOUT OBJECT FIRST</strong> (/checkout/create button), because some require 'checkout_id'. See comments on Controller. As a business YOU MUST PAY ATTENTION TO THE 'STATE' THIS 'CHECKOUT' OBJECT IS IN.
+                            <blockquote>
+                                <p class="small-font">Gets details of a specific checkout using the 'checkout_id'.</p>
+                                <p>@Ajax.ActionLink("Invoke /checkout", "GetCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Returns an array of checkouts for the account_id. </p>
+                                <p>@Ajax.ActionLink("Invoke /checkout/find", "FindCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">THE ALL IMPORTANT ONE! Creates a checkout object and returns (1) checkout_id (2) checkout_uri so they can PAY YOU.</p>
+                                <p>@Ajax.ActionLink("Invoke /checkout/create", "CreateCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Cancels the payment associated with the checkout_id. Checkout must be in "authorized" or "reserved" state. </p>
+                                <p>@Ajax.ActionLink("Invoke /checkout/cancel", "CancelCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Refunds the payment associated with the checkout_id. Checkout must be in "captured" state. Can also be a partial refund.</p>
+                                <p>@Ajax.ActionLink("Invoke /checkout/refund", "RefundCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">See WePay Docs when dealing with this call is simple but has a few "catches" you need to be aware of. <a href="https://www.wepay.com/developer/reference/checkout#capture">https://www.wepay.com/developer/reference/checkout#capture </a></p>
+                                <p>@Ajax.ActionLink("Invoke /checkout/capture", "CaptureCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">You can only set the 'callback_uri' for Instant Payment Notifications (basically push notifications) with this call. </p>
+                                <p>@Ajax.ActionLink("Invoke /checkout/modify", "ModifyCheckoutAsync", "Checkout", null, new AjaxOptions { OnSuccess = "responseHolder(checkoutSection,data)", UpdateTargetId = "checkoutSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="checkoutSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseFive">
+                            /preapproval Calls - Invocations are on PreapprovalController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseFive" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <strong>YOU MUST CREATE PREAPPROVAL OBJECT FIRST</strong> (/preapproval/create button), because some require 'preapproval_id'. See comments on Controller.
+                            <blockquote>
+                                <p class="small-font">Gets details of a payment preapproval.</p>
+                                <p>@Ajax.ActionLink("Invoke /preapproval", "GetPreapprovalAsync", "Preapproval", null, new AjaxOptions { OnSuccess = "responseHolder(preapprovalSection,data)", UpdateTargetId = "preapprovalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Creates preapproval object for the user associated with the access token you set in the Web.config and Global.asax files. Returns (1) preapproval_id (2) preapproval_uri so they can authorize the preapproval. Payments can also be executed automatically every month <a href="https://www.wepay.com/developer/reference/preapproval#create">https://www.wepay.com/developer/reference/preapproval#create</a></p>
+                                <p>@Ajax.ActionLink("Invoke /preapproval/create", "CreatePreapprovalAsync", "Preapproval", null, new AjaxOptions { OnSuccess = "responseHolder(preapprovalSection,data)", UpdateTargetId = "preapprovalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Gets preapprovals associated with an account or an application. You can also filter by 'state' or 'refernce_id'. See comments on Action Method.</p>
+                                <p>@Ajax.ActionLink("Invoke /preapproval/find", "FindPreapprovalAsync", "Preapproval", null, new AjaxOptions { OnSuccess = "responseHolder(preapprovalSection,data)", UpdateTargetId = "preapprovalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">You can only change the callback uri for Instant Payment Notification (push notifications).</p>
+                                <p>@Ajax.ActionLink("Invoke /preapproval/modify", "ModifyPreapprovalAsync", "Preapproval", null, new AjaxOptions { OnSuccess = "responseHolder(preapprovalSection,data)", UpdateTargetId = "preapprovalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Cancels the preapproval</p>
+                                <p>@Ajax.ActionLink("Invoke /preapproval/cancel", "CancelPreapprovalAsync", "Preapproval", null, new AjaxOptions { OnSuccess = "responseHolder(preapprovalSection,data)", UpdateTargetId = "preapprovalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="preapprovalSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseSix">
+                            /withdrawal Calls - Invocations are on WithdrawalController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseSix" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <strong>YOU MUST CREATE WITHDRAWAL OBJECT FIRST</strong> (/withdrawal/create button), because some require 'withdrawal_id'. See comments on Controller.
+                            <blockquote>
+                                <p class="small-font">Gets details of a withdrawal using the 'withdrawal_id'.</p>
+                                <p>@Ajax.ActionLink("Invoke /withdrawal", "GetWithdrawalAsync", "Withdrawal", null, new AjaxOptions { OnSuccess = "responseHolder(withdrawalSection,data)", UpdateTargetId = "withdrawalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Gets an array of withdrawals with the same details as the /withdrawal call. </p>
+                                <p>@Ajax.ActionLink("Invoke /withdrawal/find", "FindWithdrawalAsync", "Withdrawal", null, new AjaxOptions { OnSuccess = "responseHolder(withdrawalSection,data)", UpdateTargetId = "withdrawalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Creates withdrawal object for associated with 'account_id'. Returns (1) withdrawal_id (2) withdrawal_uri so user can authorize the withdrawal.</p>
+                                <p>@Ajax.ActionLink("Invoke /withdrawal/create", "CreateWithdrawalAsync", "Withdrawal", null, new AjaxOptions { OnSuccess = "responseHolder(withdrawalSection,data)", UpdateTargetId = "withdrawalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">You can only change the callback uri for Instant Payment Notification (push notifications).</p>
+                                <p>@Ajax.ActionLink("Invoke /withdrawal/modify", "ModifyWithdrawalAsync", "Withdrawal", null, new AjaxOptions { OnSuccess = "responseHolder(withdrawalSection,data)", UpdateTargetId = "withdrawalSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="withdrawalSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseSeven">
+                            /credit_card Calls - Invocations are on CreditCardController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseSeven" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <strong>IMPORTANT:</strong> You need to have Tokenization permission from WePay to directly send credit card info, even when testing. <a href="https://www.wepay.com/developer/tutorial/tokenization">https://www.wepay.com/developer/tutorial/tokenization</a>.
+                            Once tokenized you must invoke '/credit_card/create' first to create/return 'credit_card_id' .
+                            <blockquote>
+                                <p class="small-font">Gets the details of the a credit card associated with the 'credit_card_id'. Credit Card must be tokenized. </p>
+                                <p>@Ajax.ActionLink("Invoke /credit_card", "GetCreditCardAsync", "CreditCard", null, new AjaxOptions { OnSuccess = "responseHolder(creditcardSection,data)", UpdateTargetId = "creditcardSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">This call returns the very important (if you want to get paid) 'credit_card_id'. It also has some Notes you need to be aware of <a href="https://www.wepay.com/developer/reference/credit_card#create">https://www.wepay.com/developer/reference/credit_card#create</a>. Don't forget to set 'original_ip' &amp; 'original_device' in action method!</p>
+                                <p>@Ajax.ActionLink("Invoke /credit_card/create", "CreateCreditCardAsync", "CreditCard", null, new AjaxOptions { OnSuccess = "responseHolder(creditcardSection,data)", UpdateTargetId = "creditcardSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">This call will authorize the card and let you use it at a later time or date. See notes on WHEN to use this call <a href="https://www.wepay.com/developer/reference/credit_card#authorize">https://www.wepay.com/developer/reference/credit_card#authorize</a></p>
+                                <p>@Ajax.ActionLink("Invoke /credit_card/authorize", "AuthorizeCreditCardAsync", "CreditCard", null, new AjaxOptions { OnSuccess = "responseHolder(creditcardSection,data)", UpdateTargetId = "creditcardSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Returns an array of credit cards. They still must be tokenized.</p>
+                                <p>@Ajax.ActionLink("Invoke /credit_card/find", "FindCreditCardAsync", "CreditCard", null, new AjaxOptions { OnSuccess = "responseHolder(creditcardSection,data)", UpdateTargetId = "creditcardSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Deletes the credit card associated with the 'credit_card_id'.</p>
+                                <p>@Ajax.ActionLink("Invoke /credit_card/delete", "DeleteCreditCardAsync", "CreditCard", null, new AjaxOptions { OnSuccess = "responseHolder(creditcardSection,data)", UpdateTargetId = "creditcardSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="creditcardSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseEight">
+                            /subscription_plan Calls - Invocations are on SubscriptionPlanController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseEight" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <strong>YOU MUST CREATE SUBSCRIPTION PLAN OBJECT FIRST</strong> (/subscription_plan/create button), because some require 'subscription_plan_id'. See comments on Controller.
+                            <blockquote>
+                                <p class="small-font">Gets the details of a specific subscription plan using the subscription_plan_id. </p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_plan", "GetSubscriptionPlanAsync", "SubscriptionPlan", null, new AjaxOptions { OnSuccess = "responseHolder(subplanSection,data)", UpdateTargetId = "subplanSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Returns an array of subscription plans associated with the 'account_id'. </p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_plan/find", "FindSubscriptionPlanAsync", "SubscriptionPlan", null, new AjaxOptions { OnSuccess = "responseHolder(subplanSection,data)", UpdateTargetId = "subplanSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Creates a subscription plan and returns the 'subscription_plan_id' needed for other calls</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_plan/create", "CreateSubscriptionPlanAsync", "SubscriptionPlan", null, new AjaxOptions { OnSuccess = "responseHolder(subplanSection,data)", UpdateTargetId = "subplanSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Modifies subscription plan. ATTENTION: some cases require 'reauthorization' and setting of 'update_subscriptions' parameter. <a href="https://www.wepay.com/developer/reference/subscription_plan#modify">https://www.wepay.com/developer/reference/subscription_plan#modify</a></p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_plan/modify", "ModifySubscriptionPlanAsync", "SubscriptionPlan", null, new AjaxOptions { OnSuccess = "responseHolder(subplanSection,data)", UpdateTargetId = "subplanSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Deletes the subscription plan referenced with the 'subscription_plan_id'. HOWEVER Existing subscriptions to THAT plan will still be ACTIVE, there just won't be any NEW subscriptions to THAT plan.</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_plan/delete", "DeleteSubscriptionPlanAsync", "SubscriptionPlan", null, new AjaxOptions { OnSuccess = "responseHolder(subplanSection,data)", UpdateTargetId = "subplanSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="subplanSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseNine">
+                            /subscription Calls - Invocations are on SubscriptionController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseNine" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <strong>NOTE: </strong>A 'subscription' is associated with a 'subscription plan', so you must create a 'subscription plan' FIRST to get its returned 'subscription_plan_id' for use in theses calls.
+                            <blockquote>
+                                <p class="small-font">Gets the details of a specific subscription using the subscription_id. </p>
+                                <p>@Ajax.ActionLink("Invoke /subscription", "GetSubscriptionAsync", "Subscription", null, new AjaxOptions { OnSuccess = "responseHolder(subSection,data)", UpdateTargetId = "subSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Returns an array of subscriptions associated with the 'subscription_plan_id'. </p>
+                                <p>@Ajax.ActionLink("Invoke /subscription/find", "FindSubscriptionAsync", "Subscription", null, new AjaxOptions { OnSuccess = "responseHolder(subSection,data)", UpdateTargetId = "subSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">MUST CREATE 'SUBCRIPTION PLAN' (/subscription_plan/create) <strong>BEFORE</strong> CREATING A 'SUBSCRIPTION'. See Controller.</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription/create", "CreateSubscriptionAsync", "Subscription", null, new AjaxOptions { OnSuccess = "responseHolder(subSection,data)", UpdateTargetId = "subSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Cancels a subscription (no catches!)</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription/cancel", "CancelSubscriptionAsync", "Subscription", null, new AjaxOptions { OnSuccess = "responseHolder(subSection,data)", UpdateTargetId = "subSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Modifies a subscriptions associated with the 'subscription_plan_id' and 'subscription_id'. ATTENTION: Certain subscription changes will require the subscriber to accept the change.</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription/modify", "ModifySubscriptionAsync", "Subscription", null, new AjaxOptions { OnSuccess = "responseHolder(subSection,data)", UpdateTargetId = "subSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="subSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseTen">
+                            /subscription_charge Calls - Invocations are on SubscriptionChargeController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseTen" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            Note that there is no '/subscription_charge/create' call. That is because it is created automatically when a monthly 'subscription' payment is made. So you have to lookup subscription charges based on 'subscription_id' (See FindSubcriptionChargeAsync() on Controller) and select from that returned array the 'subscription_charge_id' you want to view or refund.
+                            <blockquote>
+                                <p class="small-font">Gets the details of a specific subscription using the 'subscription_charge_id', that you must get from the '/subscription_charge/find' call. REMEMBER that call returns an array.</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_charge", "GetSubcriptionChargeAsync", "SubscriptionCharge", null, new AjaxOptions { OnSuccess = "responseHolder(subchargeSection,data)", UpdateTargetId = "subchargeSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Returns an array of subscriptions associated with the 'subscription_id', <strong>NOT </strong>the 'subscription_charge_id'.</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_charge/find", "FindSubcriptionChargeAsync", "SubscriptionCharge", null, new AjaxOptions { OnSuccess = "responseHolder(subchargeSection,data)", UpdateTargetId = "subchargeSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                            <blockquote>
+                                <p class="small-font">Refunds a SINGLE subscription charge associated with the 'subscription_charge_id'</p>
+                                <p>@Ajax.ActionLink("Invoke /subscription_charge/refund", "RefundSubscriptionChargeAsync", "SubscriptionCharge", null, new AjaxOptions { OnSuccess = "responseHolder(subchargeSection,data)", UpdateTargetId = "subchargeSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="subchargeSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseEleven">
+                            /batch Calls - Invocations are on BatchController
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapseEleven" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <section class="col-md-4">
+                            <blockquote>
+                                <p class="small-font">Make multiple API calls within a single API call. Maximum is 50 calls per batch call.</p>
+                                <p>@Ajax.ActionLink("Invoke /batch/create", "CreateBatchCallAsync", "Batch", null, new AjaxOptions { OnSuccess = "responseHolder(batchSection,data)", UpdateTargetId = "batchSection" }, new { @class = "btn btn-primary btn-sm" })</p>
+                            </blockquote>
+                        </section>
+                        <section class="col-md-8 well">
+                            <div><p id="batchSection"></p></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row steps">
+    <h4>To return "ActionResult", or any derivative, instead of JSON change the action method (they all have the same pattern):</h4>
+    <div class="col-md-12 well gold-well">
+        <h3><strong>FROM THIS:</strong></h3>
+        <pre>
+public async Task&lt;string&gt; FindAccountAsync()
+{
+    FindAccountRequest req = new FindAccountRequest();
+    Account acc = new Account();
+    var response = await acc.FindAccountAsync(req);
+    if (response.ErrorResponse != null)
+    {
+        ViewData["Error"] = response.ErrorResponse;
+    }
+    ViewData["AccountInfo"] = response;
+    if (response.ErrorResponse != null)
+    {
+        return string.Format("An error occured. TYPE: {0}, MESSAGE: {1}", response.ErrorResponse.ExceptionName, response.ErrorResponse.Message);
+    }
+    return JsonConvert.SerializeObject(response);
+}
+</pre>
+        <p>This code reads the values from the Web.config file.</p>
+    </div>
+</div>
+
+
+<div class="row steps">
+    <div class="col-md-12 well gold-well">
+        <h3><strong>TO THIS:</strong></h3>
+        <pre>
+public async <code>Task&lt;ActionResult&gt;</code> FindAccountAsync() 
+{
+    FindAccountRequest req = new FindAccountRequest();
+    Account acc = new Account();
+    var response = await acc.FindAccountAsync(req);
+
+    if (response.ErrorResponse != null)
+    {
+        ViewData["Error"] = response.ErrorResponse;
+    }
+        
+    ViewData["AccountInfo"] = response;
+    <code class="green">
+    //remove this 'if' statement because you now have access to the 'Error' message in the ViewData    
+    //if (response.ErrorResponse != null)
+    //{
+    //    return string.Format("An error occured. TYPE: {0}, MESSAGE: {1}", response.ErrorResponse.ExceptionName, response.ErrorResponse.Message);
+    //}
+    </code>
+    <code>return View();</code>
+}
+</pre>
+        <p>Now all you have to do is create a View for each Action Method (or not MVC is very flexiable!). You could keep the JSON and dynamically create page or use Knockout.JS to create your view model. Do what you like just have fun!</p>
+    </div>
+
+</div>
+
+
+<script type="text/javascript">
+    function responseHolder(section, data) {
+        var updateContent = data;
+
+        // the DOM element representing the placeholder
+        var placeholder = section;
+
+        // update the placeholder
+        $(placeholder).html(updateContent).css("word-wrap", "break-word");
+
+        // return false to prevent the automatic update of the placeholder
+        return false;
+    }
+
+</script>
