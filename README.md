@@ -1,3 +1,4 @@
+
 WePayAPIExampleMVC5
 ===================
 
@@ -12,3 +13,7 @@ Then download the "WePayMVCHttpClientSDK" and a reference it in the Example Proj
 The SDK is a VS2013 class library project. 
 
 Run the app and read instructions on the page (it is only a single page).
+
+# Update
+Not up to date since WePay bought by Chase.
+Will update soon.
